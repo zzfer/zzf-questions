@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 /**
  * 题目服务实现类
  */
-@Service
+// @Service
 @RequiredArgsConstructor
 @Transactional
 public class QuestionServiceImpl implements QuestionService {

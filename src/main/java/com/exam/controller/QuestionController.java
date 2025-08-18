@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * 题目控制器
  */
-@RestController
+// @RestController
 @RequestMapping("/api/questions")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")

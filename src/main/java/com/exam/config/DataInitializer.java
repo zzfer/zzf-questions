@@ -15,7 +15,7 @@ import java.util.Arrays;
 /**
  * 数据初始化器 - 用于插入示例数据
  */
-@Component
+// @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
     

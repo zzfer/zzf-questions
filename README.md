@@ -25,7 +25,7 @@
 
 - **Spring Boot 3.x** - 主框架
 - **Spring Data JPA** - 数据持久化
-- **H2 Database** - 内存数据库
+- **MySQL Database** - 关系型数据库
 - **Maven** - 项目管理工具
 - **Java 17+** - 编程语言
 
@@ -49,7 +49,7 @@ mvn spring-boot:run
 
 ### 配置说明
 - 端口配置: `application.properties` 中的 `server.port=8082`
-- 数据库: 使用H2内存数据库，启动时自动初始化数据
+- 数据库: 使用MySQL数据库，启动时自动初始化数据
 - API文档: 详见 `API_DOCUMENTATION.md`
 
 ## API文档

@@ -18,7 +18,7 @@ import java.util.Map;
  * 后台题目管理控制器
  * 用于管理员对题目进行增删改查等管理操作
  */
-@RestController
+// @RestController
 @RequestMapping("/api/admin/questions")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")

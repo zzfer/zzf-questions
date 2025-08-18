@@ -1,36 +1,44 @@
--- 创建数据库
-CREATE DATABASE IF NOT EXISTS zzf_questions DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE zzf_questions;
-
 -- 题目表
-CREATE TABLE questions (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '题目ID',
-    title VARCHAR(500) NOT NULL COMMENT '题目标题',
-    content TEXT COMMENT '题目详细内容/描述',
-    type ENUM('SINGLE_CHOICE', 'MULTIPLE_CHOICE') NOT NULL COMMENT '题目类型：单选、多选',
-    difficulty ENUM('EASY', 'MEDIUM', 'HARD') DEFAULT 'MEDIUM' COMMENT '难度等级',
-    category VARCHAR(100) COMMENT '题目分类',
-    score INT DEFAULT 1 COMMENT '题目分值',
-    explanation TEXT COMMENT '答案解析',
-    status ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE' COMMENT '题目状态',
-    created_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) COMMENT='题目表';
+CREATE TABLE IF NOT EXISTS questions (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(500) NOT NULL,
+    content TEXT,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('SINGLE_CHOICE', 'MULTIPLE_CHOICE')),
+    difficulty VARCHAR(10) DEFAULT 'MEDIUM' CHECK (difficulty IN ('EASY', 'MEDIUM', 'HARD')),
+    category VARCHAR(100),
+    score INT DEFAULT 1,
+    explanation TEXT,
+    status VARCHAR(10) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE')),
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- 选项表
-CREATE TABLE question_options (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '选项ID',
-    question_id BIGINT NOT NULL COMMENT '关联题目ID',
-    option_label CHAR(1) NOT NULL COMMENT '选项标签 A,B,C,D',
-    option_content TEXT NOT NULL COMMENT '选项内容',
-    is_correct BOOLEAN DEFAULT FALSE COMMENT '是否为正确答案',
-    sort_order INT DEFAULT 0 COMMENT '选项排序',
-    created_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
-    INDEX idx_question_id (question_id),
-    INDEX idx_question_sort (question_id, sort_order)
-) COMMENT='题目选项表';
+CREATE TABLE IF NOT EXISTS question_options (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    question_id BIGINT NOT NULL,
+    option_label CHAR(1) NOT NULL,
+    option_content TEXT NOT NULL,
+    is_correct BOOLEAN DEFAULT FALSE,
+    sort_order INT DEFAULT 0,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_question_id ON question_options(question_id);
+CREATE INDEX idx_question_sort ON question_options(question_id, sort_order);
+
+-- 支出记录表
+CREATE TABLE IF NOT EXISTS expenses (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    amount DECIMAL(10,2) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    description VARCHAR(500),
+    expense_date DATE NOT NULL,
+    payer VARCHAR(20) NOT NULL,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- 创建索引
 CREATE INDEX idx_questions_type ON questions(type);
@@ -38,3 +46,8 @@ CREATE INDEX idx_questions_category ON questions(category);
 CREATE INDEX idx_questions_status ON questions(status);
 CREATE INDEX idx_questions_difficulty ON questions(difficulty);
 CREATE INDEX idx_questions_created_time ON questions(created_time);
+
+-- 支出记录表索引
+CREATE INDEX idx_expenses_category ON expenses(category);
+CREATE INDEX idx_expenses_date ON expenses(expense_date);
+CREATE INDEX idx_expenses_created_time ON expenses(created_time);

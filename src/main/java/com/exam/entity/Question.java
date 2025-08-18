@@ -3,7 +3,7 @@ package com.exam.entity;
 import com.exam.enums.Difficulty;
 import com.exam.enums.QuestionStatus;
 import com.exam.enums.QuestionType;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;

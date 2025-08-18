@@ -15,12 +15,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 前台题目展示控制器
  * 用于前台用户查看和获取题目信息（只读操作）
  */
-@RestController
+// @RestController
 @RequestMapping("/api/public/questions")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
@@ -88,7 +89,7 @@ public class PublicQuestionController {
             // 过滤只返回激活状态的题目
             List<QuestionDTO> activeQuestions = questions.stream()
                     .filter(q -> q.getStatus() == QuestionStatus.ACTIVE)
-                    .toList();
+                    .collect(Collectors.toList());
             return Result.success("获取题目成功", activeQuestions);
         } catch (Exception e) {
             return Result.error("获取题目失败: " + e.getMessage());
@@ -105,7 +106,7 @@ public class PublicQuestionController {
             // 过滤只返回激活状态的题目
             List<QuestionDTO> activeQuestions = questions.stream()
                     .filter(q -> q.getStatus() == QuestionStatus.ACTIVE)
-                    .toList();
+                    .collect(Collectors.toList());
             return Result.success("获取题目成功", activeQuestions);
         } catch (Exception e) {
             return Result.error("获取题目失败: " + e.getMessage());
@@ -122,7 +123,7 @@ public class PublicQuestionController {
             // 过滤只返回激活状态的题目
             List<QuestionDTO> activeQuestions = questions.stream()
                     .filter(q -> q.getStatus() == QuestionStatus.ACTIVE)
-                    .toList();
+                    .collect(Collectors.toList());
             return Result.success("获取题目成功", activeQuestions);
         } catch (Exception e) {
             return Result.error("获取题目失败: " + e.getMessage());
@@ -139,7 +140,7 @@ public class PublicQuestionController {
             // 过滤只返回激活状态的题目
             List<QuestionDTO> activeQuestions = questions.stream()
                     .filter(q -> q.getStatus() == QuestionStatus.ACTIVE)
-                    .toList();
+                    .collect(Collectors.toList());
             return Result.success("搜索题目成功", activeQuestions);
         } catch (Exception e) {
             return Result.error("搜索题目失败: " + e.getMessage());
@@ -187,7 +188,7 @@ public class PublicQuestionController {
             } else {
                 List<QuestionDTO> randomQuestions = questions.stream()
                         .limit(count)
-                        .toList();
+                        .collect(Collectors.toList());
                 return Result.success("获取随机题目成功", randomQuestions);
             }
         } catch (Exception e) {
