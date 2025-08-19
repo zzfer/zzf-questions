@@ -9,18 +9,20 @@ public class CategoryDTO {
     private String description;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Integer sortOrder;
 
     // 默认构造函数
     public CategoryDTO() {}
 
     // 带参数构造函数
-    public CategoryDTO(Long id, String name, String icon, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public CategoryDTO(Long id, String name, String icon, String description, LocalDateTime createdAt, LocalDateTime updatedAt, Integer sortOrder) {
         this.id = id;
         this.name = name;
         this.icon = icon;
         this.description = description;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.sortOrder = sortOrder;
     }
 
     // 简化构造函数（用于创建新分类）
@@ -77,6 +79,14 @@ public class CategoryDTO {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Integer getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
     }
 
     @Override

@@ -39,6 +39,11 @@ public class ExpenseDTO {
     private String categoryName;
     
     /**
+     * 分类图标（用于显示）
+     */
+    private String categoryIcon;
+    
+    /**
      * 备注
      */
     @Size(max = 500, message = "备注长度不能超过500个字符")

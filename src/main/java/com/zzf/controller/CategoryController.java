@@ -73,6 +73,7 @@ public class CategoryController {
         category.setName(categoryDTO.getName());
         category.setIcon(categoryDTO.getIcon());
         category.setDescription(categoryDTO.getDescription());
+        category.setSortOrder(categoryDTO.getSortOrder() != null ? categoryDTO.getSortOrder() : 0);
 
         Category savedCategory = categoryRepository.save(category);
         return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(savedCategory));
@@ -98,6 +99,9 @@ public class CategoryController {
         category.setName(categoryDTO.getName());
         category.setIcon(categoryDTO.getIcon());
         category.setDescription(categoryDTO.getDescription());
+        if (categoryDTO.getSortOrder() != null) {
+            category.setSortOrder(categoryDTO.getSortOrder());
+        }
 
         Category updatedCategory = categoryRepository.save(category);
         return ResponseEntity.ok(convertToDTO(updatedCategory));
@@ -190,7 +194,8 @@ public class CategoryController {
                 category.getIcon(),
                 category.getDescription(),
                 category.getCreatedAt(),
-                category.getUpdatedAt()
+                category.getUpdatedAt(),
+                category.getSortOrder()
         );
     }
 }

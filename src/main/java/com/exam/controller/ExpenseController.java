@@ -1,7 +1,9 @@
 package com.exam.controller;
 
+import com.exam.dto.ApiResponseDTO;
 import com.exam.dto.ExpenseDTO;
 import com.exam.dto.ExpenseStatisticsDTO;
+import com.exam.dto.PageResponseDTO;
 import com.exam.service.ExpenseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,20 +26,16 @@ public class ExpenseController {
     private final ExpenseService expenseService;
     
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createExpense(@RequestBody ExpenseDTO expenseDTO) {
+    public ResponseEntity<ApiResponseDTO<ExpenseDTO>> createExpense(@RequestBody ExpenseDTO expenseDTO) {
         log.info("创建记账记录: {}", expenseDTO);
         
         ExpenseDTO savedExpense = expenseService.createExpense(expenseDTO);
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "记账记录创建成功");
-        response.put("data", savedExpense);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponseDTO.success("记账记录创建成功", savedExpense));
     }
     
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getExpenses(
+    public ResponseEntity<ApiResponseDTO<PageResponseDTO<ExpenseDTO>>> getExpenses(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String startDate,
@@ -62,31 +60,27 @@ public class ExpenseController {
         List<ExpenseDTO> pageContent = start < allExpenses.size() ? 
             allExpenses.subList(start, end) : new ArrayList<>();
         
-        Map<String, Object> pageData = new HashMap<>();
-        pageData.put("content", pageContent);
-        pageData.put("totalElements", allExpenses.size());
-        pageData.put("totalPages", (int) Math.ceil((double) allExpenses.size() / size));
+        PageResponseDTO<ExpenseDTO> pageData = PageResponseDTO.of(
+            pageContent, 
+            allExpenses.size(), 
+            page, 
+            size
+        );
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", pageData);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponseDTO.success(pageData));
     }
     
     @GetMapping("/recent")
-    public ResponseEntity<Map<String, Object>> getRecentExpenses() {
+    public ResponseEntity<ApiResponseDTO<List<ExpenseDTO>>> getRecentExpenses() {
         log.info("查询最近的记账记录");
         
         List<ExpenseDTO> recentExpenses = expenseService.getRecentExpenses();
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", recentExpenses);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponseDTO.success(recentExpenses));
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updateExpense(
+    public ResponseEntity<ApiResponseDTO<ExpenseDTO>> updateExpense(
             @PathVariable Long id, 
             @RequestBody ExpenseDTO expenseDTO) {
         
@@ -95,40 +89,27 @@ public class ExpenseController {
         try {
             ExpenseDTO updatedExpense = expenseService.updateExpense(id, expenseDTO);
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "记账记录更新成功");
-            response.put("data", updatedExpense);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponseDTO.success("记账记录更新成功", updatedExpense));
         } catch (RuntimeException e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(ApiResponseDTO.error(e.getMessage()));
         }
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteExpense(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<Void>> deleteExpense(@PathVariable Long id) {
         log.info("删除记账记录，ID: {}", id);
         
         try {
             expenseService.deleteExpense(id);
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "记账记录删除成功");
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponseDTO.<Void>success("记账记录删除成功", null));
         } catch (RuntimeException e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(ApiResponseDTO.error(e.getMessage()));
         }
     }
     
     @GetMapping("/statistics")
-    public ResponseEntity<Map<String, Object>> getStatistics(
+    public ResponseEntity<ApiResponseDTO<ExpenseStatisticsDTO>> getStatistics(
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         
@@ -140,16 +121,10 @@ public class ExpenseController {
         try {
             ExpenseStatisticsDTO statistics = expenseService.getStatistics(start, end);
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", statistics);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponseDTO.success(statistics));
         } catch (Exception e) {
             log.error("获取统计数据失败", e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "获取统计数据失败: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(ApiResponseDTO.error("获取统计数据失败: " + e.getMessage()));
         }
     }
     

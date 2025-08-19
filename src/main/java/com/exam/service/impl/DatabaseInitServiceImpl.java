@@ -8,6 +8,8 @@ import com.exam.enums.QuestionStatus;
 import com.exam.enums.QuestionType;
 import com.exam.repository.ExpenseRepository;
 import com.exam.repository.QuestionRepository;
+import com.zzf.repository.CategoryRepository;
+import com.zzf.entity.Category;
 import com.exam.service.DatabaseInitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ public class DatabaseInitServiceImpl implements DatabaseInitService {
     
     private final QuestionRepository questionRepository;
     private final ExpenseRepository expenseRepository;
+    private final CategoryRepository categoryRepository;
     
     @Override
     @Transactional(readOnly = true)
@@ -225,10 +228,15 @@ public class DatabaseInitServiceImpl implements DatabaseInitService {
         return option;
     }
     
-    private Expense createExpense(BigDecimal amount, String category, String description, LocalDate date, String payer) {
+    private Expense createExpense(BigDecimal amount, String categoryName, String description, LocalDate date, String payer) {
+        // 根据分类名称查找分类实体
+        Category category = categoryRepository.findByName(categoryName)
+                .orElseThrow(() -> new RuntimeException("分类不存在: " + categoryName));
+        
         Expense expense = new Expense();
         expense.setAmount(amount);
         expense.setCategory(category);
+        expense.setCategoryName(category.getName());
         expense.setDescription(description);
         expense.setExpenseDate(date);
         expense.setPayer(payer);

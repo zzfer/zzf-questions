@@ -250,6 +250,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         dto.setAmount(expense.getAmount());
         dto.setCategoryId(expense.getCategory() != null ? expense.getCategory().getId() : null);
         dto.setCategoryName(expense.getCategoryName());
+        dto.setCategoryIcon(expense.getCategory() != null ? expense.getCategory().getIcon() : null);
         dto.setDescription(expense.getDescription());
         dto.setExpenseDate(expense.getExpenseDate());
         dto.setPayer(expense.getPayer());

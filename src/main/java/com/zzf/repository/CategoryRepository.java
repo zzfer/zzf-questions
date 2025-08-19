@@ -35,9 +35,9 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findAllOrderByCreatedAt();
     
     /**
-     * 获取所有分类，按名称排序
+     * 获取所有分类，按排序字段排序
      */
-    @Query("SELECT c FROM Category c ORDER BY c.name ASC")
+    @Query("SELECT c FROM Category c ORDER BY c.sortOrder ASC, c.name ASC")
     List<Category> findAllOrderByName();
     
     /**
