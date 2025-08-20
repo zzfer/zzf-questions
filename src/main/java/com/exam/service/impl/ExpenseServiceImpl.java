@@ -77,6 +77,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.setExpenseDate(expenseDTO.getExpenseDate());
         expense.setPayer(expenseDTO.getPayer());
         expense.setIsPublicExpense(expenseDTO.getIsPublicExpense());
+        expense.setUserId(expenseDTO.getUserId());
         
         Expense savedExpense = expenseRepository.save(expense);
         
@@ -160,79 +161,81 @@ public class ExpenseServiceImpl implements ExpenseService {
     public ExpenseStatisticsDTO getStatistics(LocalDate startDate, LocalDate endDate) {
         log.info("获取统计数据: {} - {}", startDate, endDate);
         
-        ExpenseStatisticsDTO statistics = new ExpenseStatisticsDTO();
-        
-        // 获取日期范围内的所有支出记录
-        List<Expense> allExpenses = expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDesc(startDate, endDate);
-        
-        // 总支出
-        BigDecimal totalAmount = allExpenses.stream()
+        try {
+            List<Expense> expenses = expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDesc(startDate, endDate);
+            
+            // 计算总支出
+            BigDecimal totalAmount = expenses.stream()
                 .map(Expense::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        statistics.setTotalAmount(totalAmount);
-        
-        // 总记录数
-        statistics.setTotalCount((long) allExpenses.size());
-        
-        // 分类统计
-        Map<String, List<Expense>> categoryGroups = allExpenses.stream()
+            
+            // 计算总记录数
+            long totalCount = expenses.size();
+            
+            // 按分类统计
+            Map<String, List<Expense>> categoryGroups = expenses.stream()
                 .collect(Collectors.groupingBy(Expense::getCategoryName));
-        
-        List<ExpenseStatisticsDTO.CategoryStatistic> categoryStatistics = categoryGroups.entrySet().stream()
+            
+            List<ExpenseStatisticsDTO.CategoryStatistic> categoryStatistics = categoryGroups.entrySet().stream()
                 .map(entry -> {
-                    String category = entry.getKey();
-                    List<Expense> expenses = entry.getValue();
-                    BigDecimal amount = expenses.stream()
-                            .map(Expense::getAmount)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    Long count = (long) expenses.size();
+                    String categoryName = entry.getKey();
+                    List<Expense> categoryExpenses = entry.getValue();
+                    BigDecimal categoryTotal = categoryExpenses.stream()
+                        .map(Expense::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    Long count = (long) categoryExpenses.size();
                     Double percentage = totalAmount.compareTo(BigDecimal.ZERO) > 0 ? 
-                            amount.divide(totalAmount, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0.0;
-                    return new ExpenseStatisticsDTO.CategoryStatistic(category, amount, count, percentage);
+                            categoryTotal.divide(totalAmount, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0.0;
+                    return new ExpenseStatisticsDTO.CategoryStatistic(categoryName, categoryTotal, count, percentage);
                 })
-                .sorted((a, b) -> b.getAmount().compareTo(a.getAmount()))
+                .sorted((a, b) -> b.getAmount().compareTo(a.getAmount())) // 按金额降序排序
                 .collect(Collectors.toList());
-        statistics.setCategoryStatistics(categoryStatistics);
-        
-        // 月度统计 - 使用Java流处理
-        Map<String, List<Expense>> monthlyGroups = allExpenses.stream()
+            
+            // 按月统计
+            Map<String, List<Expense>> monthlyGroups = expenses.stream()
                 .collect(Collectors.groupingBy(expense -> 
-                    expense.getExpenseDate().getYear() + "-" + 
-                    String.format("%02d", expense.getExpenseDate().getMonthValue())));
-        
-        List<ExpenseStatisticsDTO.MonthlyStatistic> monthlyStatistics = monthlyGroups.entrySet().stream()
+                    expense.getExpenseDate().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"))));
+            
+            List<ExpenseStatisticsDTO.MonthlyStatistic> monthlyStatistics = monthlyGroups.entrySet().stream()
                 .map(entry -> {
                     String month = entry.getKey();
-                    List<Expense> expenses = entry.getValue();
-                    BigDecimal amount = expenses.stream()
-                            .map(Expense::getAmount)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    Long count = (long) expenses.size();
-                    return new ExpenseStatisticsDTO.MonthlyStatistic(month, amount, count);
+                    List<Expense> monthExpenses = entry.getValue();
+                    BigDecimal monthTotal = monthExpenses.stream()
+                        .map(Expense::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    Long count = (long) monthExpenses.size();
+                    return new ExpenseStatisticsDTO.MonthlyStatistic(month, monthTotal, count);
                 })
-                .sorted((a, b) -> a.getMonth().compareTo(b.getMonth()))
                 .collect(Collectors.toList());
-        statistics.setMonthlyStatistics(monthlyStatistics);
-
-        // 日度统计 - 使用Java流处理
-        Map<LocalDate, List<Expense>> dailyGroups = allExpenses.stream()
+            
+            // 按日统计
+            Map<LocalDate, List<Expense>> dailyGroups = expenses.stream()
                 .collect(Collectors.groupingBy(Expense::getExpenseDate));
-        
-        List<ExpenseStatisticsDTO.DailyStatistic> dailyStatistics = dailyGroups.entrySet().stream()
+            
+            List<ExpenseStatisticsDTO.DailyStatistic> dailyStatistics = dailyGroups.entrySet().stream()
                 .map(entry -> {
                     LocalDate date = entry.getKey();
-                    List<Expense> expenses = entry.getValue();
-                    BigDecimal amount = expenses.stream()
-                            .map(Expense::getAmount)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    Long count = (long) expenses.size();
-                    return new ExpenseStatisticsDTO.DailyStatistic(date, amount, count);
+                    List<Expense> dayExpenses = entry.getValue();
+                    BigDecimal dayTotal = dayExpenses.stream()
+                        .map(Expense::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    Long count = (long) dayExpenses.size();
+                    return new ExpenseStatisticsDTO.DailyStatistic(date, dayTotal, count);
                 })
-                .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
                 .collect(Collectors.toList());
-        statistics.setDailyStatistics(dailyStatistics);
-        
-        return statistics;
+            
+            ExpenseStatisticsDTO statistics = new ExpenseStatisticsDTO();
+            statistics.setTotalAmount(totalAmount);
+            statistics.setTotalCount(totalCount);
+            statistics.setCategoryStatistics(categoryStatistics);
+            statistics.setMonthlyStatistics(monthlyStatistics);
+            statistics.setDailyStatistics(dailyStatistics);
+            
+            return statistics;
+        } catch (Exception e) {
+            log.error("获取统计数据失败", e);
+            throw new RuntimeException("获取统计数据失败: " + e.getMessage(), e);
+        }
     }
     
     @Override

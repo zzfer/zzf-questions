@@ -47,4 +47,52 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
      * 获取最近的记账记录
      */
     List<Expense> findTop10ByOrderByCreatedAtDesc();
+    
+    /**
+     * 获取日期范围内的总金额
+     */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate")
+    BigDecimal getTotalAmountByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * 获取日期范围内的记录总数
+     */
+    @Query("SELECT COUNT(e) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate")
+    Long getTotalCountByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * 获取日期范围内按分类统计的数据
+     */
+    @Query(value = "SELECT e.category_name as categoryName, " +
+           "SUM(e.amount) as totalAmount, " +
+           "COUNT(e.id) as totalCount " +
+           "FROM expenses e " +
+           "WHERE e.expense_date BETWEEN :startDate AND :endDate " +
+           "GROUP BY e.category_name " +
+           "ORDER BY SUM(e.amount) DESC", nativeQuery = true)
+    List<Object[]> getCategoryStatisticsByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * 获取日期范围内按月统计的数据
+     */
+    @Query(value = "SELECT CONCAT(YEAR(e.expense_date), '-', LPAD(MONTH(e.expense_date), 2, '0')) as month, " +
+           "SUM(e.amount) as totalAmount, " +
+           "COUNT(e.id) as totalCount " +
+           "FROM expenses e " +
+           "WHERE e.expense_date BETWEEN :startDate AND :endDate " +
+           "GROUP BY YEAR(e.expense_date), MONTH(e.expense_date) " +
+           "ORDER BY YEAR(e.expense_date), MONTH(e.expense_date)", nativeQuery = true)
+    List<Object[]> getMonthlyStatisticsByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * 获取日期范围内按日统计的数据
+     */
+    @Query(value = "SELECT DATE(e.expense_date) as date, " +
+           "SUM(e.amount) as totalAmount, " +
+           "COUNT(e.id) as totalCount " +
+           "FROM expenses e " +
+           "WHERE e.expense_date BETWEEN :startDate AND :endDate " +
+           "GROUP BY DATE(e.expense_date) " +
+           "ORDER BY DATE(e.expense_date)", nativeQuery = true)
+    List<Object[]> getDailyStatisticsByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }
