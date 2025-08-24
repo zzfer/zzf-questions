@@ -126,12 +126,22 @@ public class AssetRecordServiceImpl implements AssetRecordService {
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateMonthlyIncomeByUserId(Long userId) {
-        // 计算最近3个月的平均收入
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusMonths(3);
-        
-        BigDecimal totalIncome = assetRecordRepository.calculateIncomeByUserIdAndDateRange(userId, startDate, endDate);
-        return totalIncome.divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP);
+        // 直接返回用户的工资（一个人只会有一条工资记录）
+        return assetRecordRepository.calculateSalaryByUserId(userId);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateTotalSalary() {
+        // 计算所有人的工资总和
+        return assetRecordRepository.calculateTotalSalary();
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateTotalAssetsForAll() {
+        // 计算所有人的总资产
+        return assetRecordRepository.calculateTotalAssets();
     }
     
     @Override
@@ -236,7 +246,7 @@ public class AssetRecordServiceImpl implements AssetRecordService {
     
     // 私有辅助方法
     private BigDecimal calculateDailyExpenseByUserId(Long userId) {
-        // 计算最近30天的日均支出
+        // 计算最近30天的日均支出，按照支出统计页面的逻辑：总支出 / 实际有支出记录的天数
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(30);
         
@@ -245,7 +255,30 @@ public class AssetRecordServiceImpl implements AssetRecordService {
             totalExpense = BigDecimal.ZERO;
         }
         
-        return totalExpense.divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP);
+        Long actualDays = expenseRepository.countDistinctExpenseDaysByUserIdAndDateRange(userId, startDate, endDate);
+        if (actualDays == null || actualDays == 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        return totalExpense.divide(BigDecimal.valueOf(actualDays), 2, RoundingMode.HALF_UP);
+    }
+    
+    private BigDecimal calculateDailyExpenseForAll() {
+        // 计算所有人最近30天的日均支出，按照支出统计页面的逻辑：总支出 / 实际有支出记录的天数
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(30);
+        
+        BigDecimal totalExpense = expenseRepository.calculateTotalExpenseByDateRange(startDate, endDate);
+        if (totalExpense == null) {
+            totalExpense = BigDecimal.ZERO;
+        }
+        
+        Long actualDays = expenseRepository.countDistinctExpenseDaysByDateRange(startDate, endDate);
+        if (actualDays == null || actualDays == 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        return totalExpense.divide(BigDecimal.valueOf(actualDays), 2, RoundingMode.HALF_UP);
     }
     
     private BigDecimal calculateInterestIncome(Long userId, long days) {
@@ -269,5 +302,75 @@ public class AssetRecordServiceImpl implements AssetRecordService {
         }
         
         return totalInterest;
+    }
+    
+    private BigDecimal calculateInterestIncomeForAll(long days) {
+        List<AssetRecord> investmentRecords = assetRecordRepository.findAllInvestmentRecords();
+        BigDecimal totalInterest = BigDecimal.ZERO;
+        
+        for (AssetRecord record : investmentRecords) {
+            if (record.getAnnualInterestRate() != null) {
+                // 计算日利率
+                BigDecimal dailyRate = record.getAnnualInterestRate()
+                        .divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)
+                        .divide(BigDecimal.valueOf(365), 6, RoundingMode.HALF_UP);
+                
+                // 计算利息收入
+                BigDecimal interest = record.getAmount()
+                        .multiply(dailyRate)
+                        .multiply(BigDecimal.valueOf(days));
+                
+                totalInterest = totalInterest.add(interest);
+            }
+        }
+        
+        return totalInterest;
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public AssetPredictionResult predictYearEndAssetsForAll() {
+        // 1. 计算当前总资产（所有人）
+        BigDecimal currentTotalAssets = assetRecordRepository.calculateTotalAssets();
+        
+        // 2. 计算月均收入（所有人的工资总和）
+        BigDecimal monthlyIncome = calculateTotalSalary();
+        
+        // 3. 计算日均支出（所有人）
+        BigDecimal dailyExpense = calculateDailyExpenseForAll();
+        
+        // 4. 计算到年底的剩余天数
+        LocalDate now = LocalDate.now();
+        LocalDate yearEnd = LocalDate.of(now.getYear(), 12, 31);
+        long remainingDays = ChronoUnit.DAYS.between(now, yearEnd);
+        
+        // 5. 计算剩余月数
+        long remainingMonths = ChronoUnit.MONTHS.between(now, yearEnd);
+        
+        // 6. 预计剩余收入
+        BigDecimal expectedIncome = monthlyIncome.multiply(BigDecimal.valueOf(remainingMonths));
+        
+        // 7. 预计剩余支出
+        BigDecimal expectedExpense = dailyExpense.multiply(BigDecimal.valueOf(remainingDays));
+        
+        // 8. 计算投资利息收入（所有人）
+        BigDecimal interestIncome = calculateInterestIncomeForAll(remainingDays);
+        
+        // 9. 预测年底资产
+        BigDecimal predictedYearEndAssets = currentTotalAssets
+                .add(expectedIncome)
+                .subtract(expectedExpense)
+                .add(interestIncome);
+
+        
+        return new AssetPredictionResult(
+                currentTotalAssets,
+                monthlyIncome,
+                dailyExpense,
+                predictedYearEndAssets,
+                expectedIncome,
+                expectedExpense,
+                interestIncome
+        );
     }
 }

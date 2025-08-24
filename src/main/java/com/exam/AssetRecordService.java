@@ -40,8 +40,16 @@ public interface AssetRecordService {
     
     BigDecimal calculateMonthlyIncomeByUserId(Long userId);
     
+    BigDecimal calculateTotalSalary();
+    
+    // 计算所有人总资产
+    BigDecimal calculateTotalAssetsForAll();
+    
     // 年底资产预测
     AssetPredictionResult predictYearEndAssets(Long userId);
+    
+    // 全部用户年底资产预测
+    AssetPredictionResult predictYearEndAssetsForAll();
     
     // 获取用户最近记录
     List<AssetRecord> getRecentAssetRecords(Long userId, int limit);

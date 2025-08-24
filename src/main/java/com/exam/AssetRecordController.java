@@ -179,6 +179,17 @@ public class AssetRecordController {
         }
     }
     
+    // 计算所有人总资产
+    @GetMapping("/total-assets")
+    public ResponseEntity<BigDecimal> calculateTotalAssetsForAll() {
+        try {
+            BigDecimal totalAssets = assetRecordService.calculateTotalAssetsForAll();
+            return new ResponseEntity<>(totalAssets, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
     // 根据类型计算用户资产
     @GetMapping("/user/{userId}/assets-by-type/{recordType}")
     public ResponseEntity<BigDecimal> calculateAssetsByUserIdAndType(
@@ -192,7 +203,7 @@ public class AssetRecordController {
         }
     }
     
-    // 计算用户月均收入
+    // 计算用户月均收入（工资）
     @GetMapping("/user/{userId}/monthly-income")
     public ResponseEntity<BigDecimal> calculateMonthlyIncomeByUserId(@PathVariable Long userId) {
         try {
@@ -203,11 +214,33 @@ public class AssetRecordController {
         }
     }
     
-    // 年底资产预测
+    // 计算所有人的月均收入（工资总和）
+    @GetMapping("/monthly-income")
+    public ResponseEntity<BigDecimal> calculateTotalSalary() {
+        try {
+            BigDecimal totalSalary = assetRecordService.calculateTotalSalary();
+            return new ResponseEntity<>(totalSalary, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    // 年底资产预测（指定用户）
     @GetMapping("/user/{userId}/year-end-prediction")
     public ResponseEntity<AssetRecordService.AssetPredictionResult> predictYearEndAssets(@PathVariable Long userId) {
         try {
             AssetRecordService.AssetPredictionResult prediction = assetRecordService.predictYearEndAssets(userId);
+            return new ResponseEntity<>(prediction, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    // 年底资产预测（所有人）
+    @GetMapping("/year-end-prediction")
+    public ResponseEntity<AssetRecordService.AssetPredictionResult> predictYearEndAssetsForAll() {
+        try {
+            AssetRecordService.AssetPredictionResult prediction = assetRecordService.predictYearEndAssetsForAll();
             return new ResponseEntity<>(prediction, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);

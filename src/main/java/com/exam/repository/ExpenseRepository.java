@@ -71,6 +71,18 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     BigDecimal calculateTotalExpenseByUserId(@Param("userId") Long userId);
     
     /**
+     * 计算所有人在指定日期范围内的支出总额
+     */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate")
+    BigDecimal calculateTotalExpenseByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * 计算所有人的总支出
+     */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e")
+    BigDecimal calculateTotalExpense();
+    
+    /**
      * 根据支出类型计算用户支出
      */
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.userId = :userId AND e.categoryName = :category")
@@ -184,4 +196,16 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
         @Param("payer") String payer,
         @Param("isPublicExpense") Boolean isPublicExpense
     );
+    
+    /**
+     * 计算用户在指定日期范围内实际有支出记录的天数
+     */
+    @Query("SELECT COUNT(DISTINCT e.expenseDate) FROM Expense e WHERE e.userId = :userId AND e.expenseDate BETWEEN :startDate AND :endDate")
+    Long countDistinctExpenseDaysByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * 计算所有人在指定日期范围内实际有支出记录的天数
+     */
+    @Query("SELECT COUNT(DISTINCT e.expenseDate) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate")
+    Long countDistinctExpenseDaysByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

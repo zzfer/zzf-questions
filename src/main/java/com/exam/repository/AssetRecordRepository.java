@@ -39,13 +39,25 @@ public interface AssetRecordRepository extends JpaRepository<AssetRecord, Long> 
     @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.userId = :userId AND a.recordType = :recordType")
     BigDecimal calculateAssetsByUserIdAndType(@Param("userId") Long userId, @Param("recordType") String recordType);
     
-    // 计算用户在指定日期范围内的收入总额
-    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.userId = :userId AND a.recordType IN ('salary', 'bonus') AND a.recordDate BETWEEN :startDate AND :endDate")
-    BigDecimal calculateIncomeByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    // 计算用户的工资（只查询salary类型）
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.userId = :userId AND a.recordType = 'salary'")
+    BigDecimal calculateSalaryByUserId(@Param("userId") Long userId);
+    
+    // 计算所有人的工资总和
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.recordType = 'salary'")
+    BigDecimal calculateTotalSalary();
+    
+    // 计算所有人的总资产
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a")
+    BigDecimal calculateTotalAssets();
     
     // 获取用户的投资记录（用于计算利息）
     @Query("SELECT a FROM AssetRecord a WHERE a.userId = :userId AND a.recordType = 'investment' AND a.annualInterestRate IS NOT NULL")
     List<AssetRecord> findInvestmentRecordsByUserId(@Param("userId") Long userId);
+    
+    // 获取所有人的投资记录（用于计算利息）
+    @Query("SELECT a FROM AssetRecord a WHERE a.recordType = 'investment' AND a.annualInterestRate IS NOT NULL")
+    List<AssetRecord> findAllInvestmentRecords();
     
     // 删除用户的资产记录
     void deleteByUserId(Long userId);
