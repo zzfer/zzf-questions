@@ -45,6 +45,12 @@ public interface AssetRecordService {
     // 计算所有人总资产
     BigDecimal calculateTotalAssetsForAll();
     
+    // 根据筛选条件计算总资产
+    BigDecimal calculateTotalAssetsByFilter(String recordType, String owner, LocalDate startDate, LocalDate endDate);
+    
+    // 根据筛选条件计算用户总资产
+    BigDecimal calculateTotalAssetsByUserIdAndFilter(Long userId, String recordType, String owner, LocalDate startDate, LocalDate endDate);
+    
     // 年底资产预测
     AssetPredictionResult predictYearEndAssets(Long userId);
     

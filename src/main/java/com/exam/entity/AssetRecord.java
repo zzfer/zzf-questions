@@ -18,7 +18,7 @@ public class AssetRecord {
     @Column(name = "record_type", nullable = false, length = 50)
     private String recordType;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = true, precision = 10, scale = 2)
     private BigDecimal amount;
 
     @Column(length = 255)

@@ -31,8 +31,8 @@ public interface AssetRecordRepository extends JpaRepository<AssetRecord, Long> 
     // 根据所属人和日期范围查询
     List<AssetRecord> findByOwnerAndRecordDateBetweenOrderByRecordDateDesc(String owner, LocalDate startDate, LocalDate endDate);
     
-    // 计算用户总资产
-    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.userId = :userId")
+    // 计算用户总资产（排除工资）
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.userId = :userId AND a.recordType != 'salary'")
     BigDecimal calculateTotalAssetsByUserId(@Param("userId") Long userId);
     
     // 根据记录类型计算用户资产
@@ -47,8 +47,8 @@ public interface AssetRecordRepository extends JpaRepository<AssetRecord, Long> 
     @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.recordType = 'salary'")
     BigDecimal calculateTotalSalary();
     
-    // 计算所有人的总资产
-    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a")
+    // 计算所有人的总资产（排除工资）
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.recordType != 'salary'")
     BigDecimal calculateTotalAssets();
     
     // 获取用户的投资记录（用于计算利息）
@@ -58,6 +58,29 @@ public interface AssetRecordRepository extends JpaRepository<AssetRecord, Long> 
     // 获取所有人的投资记录（用于计算利息）
     @Query("SELECT a FROM AssetRecord a WHERE a.recordType = 'investment' AND a.annualInterestRate IS NOT NULL")
     List<AssetRecord> findAllInvestmentRecords();
+    
+    // 根据筛选条件计算总资产（排除工资）
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.recordType != 'salary' AND " +
+           "(:recordType IS NULL OR a.recordType = :recordType) AND " +
+           "(:owner IS NULL OR a.owner = :owner) AND " +
+           "(:startDate IS NULL OR a.recordDate >= :startDate) AND " +
+           "(:endDate IS NULL OR a.recordDate <= :endDate)")
+    BigDecimal calculateTotalAssetsByFilter(@Param("recordType") String recordType,
+                                           @Param("owner") String owner,
+                                           @Param("startDate") LocalDate startDate,
+                                           @Param("endDate") LocalDate endDate);
+    
+    // 根据筛选条件计算用户总资产（排除工资）
+    @Query("SELECT COALESCE(SUM(a.amount), 0) FROM AssetRecord a WHERE a.userId = :userId AND a.recordType != 'salary' AND " +
+           "(:recordType IS NULL OR a.recordType = :recordType) AND " +
+           "(:owner IS NULL OR a.owner = :owner) AND " +
+           "(:startDate IS NULL OR a.recordDate >= :startDate) AND " +
+           "(:endDate IS NULL OR a.recordDate <= :endDate)")
+    BigDecimal calculateTotalAssetsByUserIdAndFilter(@Param("userId") Long userId,
+                                                    @Param("recordType") String recordType,
+                                                    @Param("owner") String owner,
+                                                    @Param("startDate") LocalDate startDate,
+                                                    @Param("endDate") LocalDate endDate);
     
     // 删除用户的资产记录
     void deleteByUserId(Long userId);

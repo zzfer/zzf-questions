@@ -190,6 +190,43 @@ public class AssetRecordController {
         }
     }
     
+    // 根据筛选条件计算总资产
+    @GetMapping("/total-assets/filter")
+    public ResponseEntity<BigDecimal> calculateTotalAssetsByFilter(
+            @RequestParam(required = false) String recordType,
+            @RequestParam(required = false) String owner,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            LocalDate start = (startDate != null && !startDate.trim().isEmpty()) ? LocalDate.parse(startDate) : null;
+            LocalDate end = (endDate != null && !endDate.trim().isEmpty()) ? LocalDate.parse(endDate) : null;
+            
+            BigDecimal totalAssets = assetRecordService.calculateTotalAssetsByFilter(recordType, owner, start, end);
+            return new ResponseEntity<>(totalAssets, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    // 根据筛选条件计算用户总资产
+    @GetMapping("/user/{userId}/total-assets/filter")
+    public ResponseEntity<BigDecimal> calculateTotalAssetsByUserIdAndFilter(
+            @PathVariable Long userId,
+            @RequestParam(required = false) String recordType,
+            @RequestParam(required = false) String owner,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            LocalDate start = (startDate != null && !startDate.trim().isEmpty()) ? LocalDate.parse(startDate) : null;
+            LocalDate end = (endDate != null && !endDate.trim().isEmpty()) ? LocalDate.parse(endDate) : null;
+            
+            BigDecimal totalAssets = assetRecordService.calculateTotalAssetsByUserIdAndFilter(userId, recordType, owner, start, end);
+            return new ResponseEntity<>(totalAssets, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
     // 根据类型计算用户资产
     @GetMapping("/user/{userId}/assets-by-type/{recordType}")
     public ResponseEntity<BigDecimal> calculateAssetsByUserIdAndType(

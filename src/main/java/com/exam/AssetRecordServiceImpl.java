@@ -27,6 +27,11 @@ public class AssetRecordServiceImpl implements AssetRecordService {
     
     @Override
     public AssetRecord createAssetRecord(AssetRecord assetRecord) {
+        // 如果金额为null，设置默认值为0
+        if (assetRecord.getAmount() == null) {
+            assetRecord.setAmount(BigDecimal.ZERO);
+        }
+        
         if (!validateAssetRecord(assetRecord)) {
             throw new IllegalArgumentException("Invalid asset record data");
         }
@@ -57,7 +62,8 @@ public class AssetRecordServiceImpl implements AssetRecordService {
         if (existingRecord.isPresent()) {
             AssetRecord record = existingRecord.get();
             record.setRecordType(assetRecord.getRecordType());
-            record.setAmount(assetRecord.getAmount());
+            // 如果金额为null，设置默认值为0
+            record.setAmount(assetRecord.getAmount() != null ? assetRecord.getAmount() : BigDecimal.ZERO);
             record.setDescription(assetRecord.getDescription());
             record.setRecordDate(assetRecord.getRecordDate());
             record.setGoldWeight(assetRecord.getGoldWeight());
@@ -146,6 +152,26 @@ public class AssetRecordServiceImpl implements AssetRecordService {
     
     @Override
     @Transactional(readOnly = true)
+    public BigDecimal calculateTotalAssetsByFilter(String recordType, String owner, LocalDate startDate, LocalDate endDate) {
+        // 处理空字符串为null
+        String filterRecordType = (recordType != null && recordType.trim().isEmpty()) ? null : recordType;
+        String filterOwner = (owner != null && owner.trim().isEmpty()) ? null : owner;
+        
+        return assetRecordRepository.calculateTotalAssetsByFilter(filterRecordType, filterOwner, startDate, endDate);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateTotalAssetsByUserIdAndFilter(Long userId, String recordType, String owner, LocalDate startDate, LocalDate endDate) {
+        // 处理空字符串为null
+        String filterRecordType = (recordType != null && recordType.trim().isEmpty()) ? null : recordType;
+        String filterOwner = (owner != null && owner.trim().isEmpty()) ? null : owner;
+        
+        return assetRecordRepository.calculateTotalAssetsByUserIdAndFilter(userId, filterRecordType, filterOwner, startDate, endDate);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
     public AssetPredictionResult predictYearEndAssets(Long userId) {
         // 1. 计算当前总资产
         BigDecimal currentTotalAssets = calculateTotalAssetsByUserId(userId);
@@ -213,7 +239,8 @@ public class AssetRecordServiceImpl implements AssetRecordService {
             return false;
         }
         
-        if (assetRecord.getAmount() == null || assetRecord.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+        // 金额可以为null（会设置默认值0），但不能为负数
+        if (assetRecord.getAmount() != null && assetRecord.getAmount().compareTo(BigDecimal.ZERO) < 0) {
             return false;
         }
         
