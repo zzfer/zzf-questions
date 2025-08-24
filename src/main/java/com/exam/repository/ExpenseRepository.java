@@ -138,4 +138,50 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
            "GROUP BY DATE(e.expense_date) " +
            "ORDER BY DATE(e.expense_date)", nativeQuery = true)
     List<Object[]> getDailyStatisticsByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * 根据多条件查询支出记录
+     */
+    @Query("SELECT e FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate " +
+           "AND (:categoryName IS NULL OR e.categoryName = :categoryName) " +
+           "AND (:payer IS NULL OR e.payer = :payer) " +
+           "AND (:isPublicExpense IS NULL OR e.isPublicExpense = :isPublicExpense) " +
+           "ORDER BY e.expenseDate DESC")
+    List<Expense> findByMultipleConditions(
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        @Param("categoryName") String categoryName,
+        @Param("payer") String payer,
+        @Param("isPublicExpense") Boolean isPublicExpense
+    );
+    
+    /**
+     * 根据多条件计算支出总额
+     */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate " +
+           "AND (:categoryName IS NULL OR e.categoryName = :categoryName) " +
+           "AND (:payer IS NULL OR e.payer = :payer) " +
+           "AND (:isPublicExpense IS NULL OR e.isPublicExpense = :isPublicExpense)")
+    BigDecimal calculateTotalAmountByMultipleConditions(
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        @Param("categoryName") String categoryName,
+        @Param("payer") String payer,
+        @Param("isPublicExpense") Boolean isPublicExpense
+    );
+    
+    /**
+     * 根据多条件计算支出记录数
+     */
+    @Query("SELECT COUNT(e) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate " +
+           "AND (:categoryName IS NULL OR e.categoryName = :categoryName) " +
+           "AND (:payer IS NULL OR e.payer = :payer) " +
+           "AND (:isPublicExpense IS NULL OR e.isPublicExpense = :isPublicExpense)")
+    Long countByMultipleConditions(
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        @Param("categoryName") String categoryName,
+        @Param("payer") String payer,
+        @Param("isPublicExpense") Boolean isPublicExpense
+    );
 }

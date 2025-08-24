@@ -240,6 +240,112 @@ public class ExpenseServiceImpl implements ExpenseService {
     
     @Override
     @Transactional(readOnly = true)
+    public ExpenseStatisticsDTO getStatistics(LocalDate startDate, LocalDate endDate, String categoryName, String payer, Boolean isPublicExpense) {
+        log.info("获取多条件统计数据: {} - {}, 分类: {}, 支出人: {}, 公共支出: {}", startDate, endDate, categoryName, payer, isPublicExpense);
+        
+        try {
+            // 使用新的多条件查询方法
+            List<Expense> expenses = expenseRepository.findByMultipleConditions(startDate, endDate, categoryName, payer, isPublicExpense);
+            
+            // 计算总支出
+            BigDecimal totalAmount = expenseRepository.calculateTotalAmountByMultipleConditions(startDate, endDate, categoryName, payer, isPublicExpense);
+            
+            // 计算总记录数
+            long totalCount = expenseRepository.countByMultipleConditions(startDate, endDate, categoryName, payer, isPublicExpense);
+            
+            // 按分类统计
+            Map<String, List<Expense>> categoryGroups = expenses.stream()
+                .collect(Collectors.groupingBy(Expense::getCategoryName));
+            
+            List<ExpenseStatisticsDTO.CategoryStatistic> categoryStatistics = categoryGroups.entrySet().stream()
+                .map(entry -> {
+                    String catName = entry.getKey();
+                    List<Expense> categoryExpenses = entry.getValue();
+                    BigDecimal categoryTotal = categoryExpenses.stream()
+                        .map(Expense::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    Long count = (long) categoryExpenses.size();
+                    Double percentage = totalAmount.compareTo(BigDecimal.ZERO) > 0 ? 
+                            categoryTotal.divide(totalAmount, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue() : 0.0;
+                    return new ExpenseStatisticsDTO.CategoryStatistic(catName, categoryTotal, count, percentage);
+                })
+                .sorted((a, b) -> b.getAmount().compareTo(a.getAmount()))
+                .collect(Collectors.toList());
+            
+            // 按月统计
+            Map<String, List<Expense>> monthlyGroups = expenses.stream()
+                .collect(Collectors.groupingBy(expense -> 
+                    expense.getExpenseDate().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"))));
+            
+            List<ExpenseStatisticsDTO.MonthlyStatistic> monthlyStatistics = monthlyGroups.entrySet().stream()
+                .map(entry -> {
+                    String month = entry.getKey();
+                    List<Expense> monthExpenses = entry.getValue();
+                    BigDecimal monthTotal = monthExpenses.stream()
+                        .map(Expense::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    Long count = (long) monthExpenses.size();
+                    return new ExpenseStatisticsDTO.MonthlyStatistic(month, monthTotal, count);
+                })
+                .collect(Collectors.toList());
+            
+            // 按日统计
+            Map<LocalDate, List<Expense>> dailyGroups = expenses.stream()
+                .collect(Collectors.groupingBy(Expense::getExpenseDate));
+            
+            List<ExpenseStatisticsDTO.DailyStatistic> dailyStatistics = dailyGroups.entrySet().stream()
+                .map(entry -> {
+                    LocalDate date = entry.getKey();
+                    List<Expense> dayExpenses = entry.getValue();
+                    BigDecimal dayTotal = dayExpenses.stream()
+                        .map(Expense::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    Long count = (long) dayExpenses.size();
+                    return new ExpenseStatisticsDTO.DailyStatistic(date, dayTotal, count);
+                })
+                .collect(Collectors.toList());
+            
+            ExpenseStatisticsDTO statistics = new ExpenseStatisticsDTO();
+            statistics.setTotalAmount(totalAmount);
+            statistics.setTotalCount(totalCount);
+            statistics.setCategoryStatistics(categoryStatistics);
+            statistics.setMonthlyStatistics(monthlyStatistics);
+            statistics.setDailyStatistics(dailyStatistics);
+            
+            return statistics;
+        } catch (Exception e) {
+            log.error("获取多条件统计数据失败", e);
+            throw new RuntimeException("获取多条件统计数据失败: " + e.getMessage(), e);
+        }
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExpenseDTO> getExpensesByFilters(LocalDate startDate, LocalDate endDate, String categoryName, String payer, Boolean isPublicExpense) {
+        log.info("根据多条件查询支出记录，开始日期: {}, 结束日期: {}, 分类: {}, 付款人: {}, 公共支出: {}", startDate, endDate, categoryName, payer, isPublicExpense);
+        
+        // 如果没有提供日期范围，使用默认范围
+        if (startDate == null || endDate == null) {
+            if (startDate == null && endDate == null) {
+                // 如果都没有提供，使用最近30天
+                endDate = LocalDate.now();
+                startDate = endDate.minusDays(30);
+            } else if (startDate == null) {
+                startDate = endDate.minusDays(30);
+            } else {
+                endDate = LocalDate.now();
+            }
+        }
+        
+        List<Expense> expenses = expenseRepository.findByMultipleConditions(startDate, endDate, categoryName, payer, isPublicExpense);
+        
+        return expenses.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
     public List<ExpenseCategory> getAllCategories() {
         return Arrays.asList(ExpenseCategory.values());
     }

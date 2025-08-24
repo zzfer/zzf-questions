@@ -53,9 +53,19 @@ public interface ExpenseService {
     List<ExpenseDTO> getRecentExpenses();
     
     /**
-     * 获取统计数据
+     * 获取支出统计数据
      */
     ExpenseStatisticsDTO getStatistics(LocalDate startDate, LocalDate endDate);
+    
+    /**
+     * 根据多条件获取支出统计数据
+     */
+    ExpenseStatisticsDTO getStatistics(LocalDate startDate, LocalDate endDate, String categoryName, String payer, Boolean isPublicExpense);
+    
+    /**
+     * 根据多条件查询支出记录
+     */
+    List<ExpenseDTO> getExpensesByFilters(LocalDate startDate, LocalDate endDate, String categoryName, String payer, Boolean isPublicExpense);
     
     /**
      * 获取所有可用的分类

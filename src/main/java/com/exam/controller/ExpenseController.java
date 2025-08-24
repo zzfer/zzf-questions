@@ -39,26 +39,35 @@ public class ExpenseController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            @RequestParam(value = "categoryName", required = false) String categoryName,
+            @RequestParam(value = "payer", required = false) String payer,
+            @RequestParam(value = "isPublicExpense", required = false) Boolean isPublicExpense) {
         
-        log.info("查询记账记录，页码: {}, 大小: {}, 开始日期: {}, 结束日期: {}", page, size, startDate, endDate);
+        log.info("查询记账记录，页码: {}, 大小: {}, 开始日期: {}, 结束日期: {}, 分类: {}, 付款人: {}, 公共支出: {}", 
+                page, size, startDate, endDate, categoryName, payer, isPublicExpense);
         
         List<ExpenseDTO> allExpenses;
         
-        // 根据日期范围查询
-        if (startDate != null && endDate != null) {
-            LocalDate start = LocalDate.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE);
-            LocalDate end = LocalDate.parse(endDate, DateTimeFormatter.ISO_LOCAL_DATE);
+        // 设置默认日期范围
+        LocalDate start = startDate != null ? LocalDate.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE) : null;
+        LocalDate end = endDate != null ? LocalDate.parse(endDate, DateTimeFormatter.ISO_LOCAL_DATE) : null;
+        
+        // 根据筛选条件查询
+        if (categoryName != null || payer != null || isPublicExpense != null) {
+            // 使用多条件查询，需要在ExpenseService中添加相应方法
+            allExpenses = expenseService.getExpensesByFilters(start, end, categoryName, payer, isPublicExpense);
+        } else if (start != null && end != null) {
             allExpenses = expenseService.getExpensesByDateRange(start, end);
         } else {
             allExpenses = expenseService.getAllExpenses();
         }
         
         // 简单的分页
-        int start = page * size;
-        int end = Math.min(start + size, allExpenses.size());
-        List<ExpenseDTO> pageContent = start < allExpenses.size() ? 
-            allExpenses.subList(start, end) : new ArrayList<>();
+        int startIndex = page * size;
+        int endIndex = Math.min(startIndex + size, allExpenses.size());
+        List<ExpenseDTO> pageContent = startIndex < allExpenses.size() ? 
+            allExpenses.subList(startIndex, endIndex) : new ArrayList<>();
         
         PageResponseDTO<ExpenseDTO> pageData = PageResponseDTO.of(
             pageContent, 
@@ -111,15 +120,25 @@ public class ExpenseController {
     @GetMapping("/statistics")
     public ResponseEntity<ApiResponseDTO<ExpenseStatisticsDTO>> getStatistics(
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            @RequestParam(value = "categoryName", required = false) String categoryName,
+            @RequestParam(value = "payer", required = false) String payer,
+            @RequestParam(value = "isPublicExpense", required = false) Boolean isPublicExpense) {
         
-        log.info("获取统计数据，开始日期: {}, 结束日期: {}", startDate, endDate);
+        log.info("获取统计数据，开始日期: {}, 结束日期: {}, 分类: {}, 付款人: {}, 公共支出: {}", startDate, endDate, categoryName, payer, isPublicExpense);
         
         LocalDate start = startDate != null ? LocalDate.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE) : LocalDate.now().minusMonths(1);
         LocalDate end = endDate != null ? LocalDate.parse(endDate, DateTimeFormatter.ISO_LOCAL_DATE) : LocalDate.now();
         
         try {
-            ExpenseStatisticsDTO statistics = expenseService.getStatistics(start, end);
+            ExpenseStatisticsDTO statistics;
+            if (categoryName != null || payer != null || isPublicExpense != null) {
+                // 使用多条件查询
+                statistics = expenseService.getStatistics(start, end, categoryName, payer, isPublicExpense);
+            } else {
+                // 使用原有的查询方法
+                statistics = expenseService.getStatistics(start, end);
+            }
             
             return ResponseEntity.ok(ApiResponseDTO.success(statistics));
         } catch (Exception e) {
