@@ -49,6 +49,49 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findTop10ByOrderByCreatedAtDesc();
     
     /**
+     * 根据用户ID查询支出记录
+     */
+    List<Expense> findByUserIdOrderByExpenseDateDesc(Long userId);
+    
+    /**
+     * 根据用户ID和日期范围查询支出记录
+     */
+    List<Expense> findByUserIdAndExpenseDateBetweenOrderByExpenseDateDesc(Long userId, LocalDate startDate, LocalDate endDate);
+    
+    /**
+     * 计算用户在指定日期范围内的支出总额
+     */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.userId = :userId AND e.expenseDate BETWEEN :startDate AND :endDate")
+    BigDecimal calculateTotalExpenseByUserIdAndDateRange(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * 计算用户总支出
+     */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.userId = :userId")
+    BigDecimal calculateTotalExpenseByUserId(@Param("userId") Long userId);
+    
+    /**
+     * 根据支出类型计算用户支出
+     */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.userId = :userId AND e.categoryName = :category")
+    BigDecimal calculateExpenseByUserIdAndCategory(@Param("userId") Long userId, @Param("category") String category);
+    
+    /**
+     * 删除用户的支出记录
+     */
+    void deleteByUserId(Long userId);
+    
+    /**
+     * 统计用户的支出记录数量
+     */
+    long countByUserId(Long userId);
+    
+    /**
+     * 获取用户最近的支出记录
+     */
+    List<Expense> findTop10ByUserIdOrderByCreatedAtDesc(Long userId);
+    
+    /**
      * 获取日期范围内的总金额
      */
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate")
